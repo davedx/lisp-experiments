@@ -21,10 +21,31 @@
 	(dolist (cd *db*)
 		(format t "~{~a:~10t~a~%~}~%" cd)))
 
+(defun select-by-artist (artist)
+  (remove-if-not
+   #'(lambda (cd) (equal (getf cd :artist) artist))
+   *db*))
+
+(defun select (selector-fn)
+  (remove-if-not selector-fn *db*))
+
+; macro spaghetti
+(defun make-comparison-expr (field value)
+  `(equal (getf cd ,field) ,value))
+(defun make-comparisons-list (fields)
+  (loop while fields
+     collecting (make-comparison-expr (pop fields) (pop fields))))
+(defmacro where (&rest clauses)
+  `#'(lambda (cd) (and ,@(make-comparisons-list clauses))))
+
 (add-record (make-cd "Appetite For Destruction" "Guns n Roses" 7 t))
 (add-record (make-cd "Use Your Illusion 1" "Guns n Roses" 7 t))
 (add-record (make-cd "Use Your Illusion 2" "Guns n Roses" 8 t))
 (add-record (make-cd "Smells Like Teen Spirit" "Nirvana" 8 t))
-(add-cds)
+;(add-cds)
 (hello-dave)
 (dump-db)
+; (format t "~a~%" (select-by-artist "Guns n Roses"))
+(format t "~a~%" (select #'(lambda (cd) (equal (getf cd :artist) "Guns n Roses"))))
+
+(format t "~a~%" (select (where :title "Smells Like Teen Spirit" :ripped t)))
